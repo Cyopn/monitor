@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}
+  Registro - Gestor de servicios
+{% endblock %}
+{% block heading %}
+  Registro
+{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+              {{ form.username.label(class='form-label') }}
+              {{ form.username(class='form-control') }}
+              {% for error in form.username.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.password.label(class='form-label') }}
+              {{ form.password(class='form-control') }}
+              {% for error in form.password.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.password2.label(class='form-label') }}
+              {{ form.password2(class='form-control') }}
+              {% for error in form.password2.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="d-grid">{{ form.submit(class='btn btn-primary') }}</div>
+          </form>
+        </div>
+        <div class="card-footer text-center py-3">
+          <div>
+            ¿Ya tienes una cuenta? <a href="{{ url_for('auth.login') }}">Inicia sesión aquí</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

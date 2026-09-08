@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}
+  Servicios - Gestor de servicios
+{% endblock %}
+{% block heading %}
+  Mis servicios
+{% endblock %}
+{% block toolbar %}
+  <a href="{{ url_for('services.new') }}" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Nuevo servicio</a>
+{% endblock %}
+{% block content %}
+  {% if services %}
+    <div class="row">
+      {% for service in services %}
+        <div class="col-md-4">
+          <div class="card service-card">
+            <div class="service-header">
+              <h5 class="mb-0">{{ service.name }}</h5>
+              <span class="status-badge status-{{ service.status }} float-end">
+                {% if service.status == 'running' %}
+                  EN EJECUCIÓN
+                {% elif service.status == 'stopped' %}
+                  DETENIDO
+                {% elif service.status == 'paused' %}
+                  EN PAUSA
+                {% else %}
+                  ERROR
+                {% endif %}
+              </span>
+            </div>
+            <div class="service-body">
+              <p class="card-text">{{ service.description|truncate(100) }}</p>
+              <p>
+                <strong>Comando:</strong> <code>{{ service.command }}</code>
+              </p>
+              <p>
+                <strong>Directorio de trabajo:</strong> <code>{{ service.working_directory }}</code>
+              </p>
+              {% if service.pid %}
+                <p>
+                  <strong>PID:</strong> {{ service.pid }}
+                </p>
+              {% endif %}
+              <div class="d-grid gap-2">
+                <a href="{{ url_for('services.detail', id=service.id) }}" class="btn btn-outline-info btn-sm"><i class="fas fa-eye me-1"></i>Detalles</a>
+                {% if service.status == 'running' %}
+                  <form method="POST" action="{{ url_for('services.stop', id=service.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100" onclick="return confirm('¿Detener este servicio?');"><i class="fas fa-stop me-1"></i>Detener</button>
+                  </form>
+                {% else %}
+                  <form method="POST" action="{{ url_for('services.start', id=service.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <button type="submit" class="btn btn-outline-success btn-sm w-100" onclick="return confirm('¿Iniciar este servicio?');"><i class="fas fa-play me-1"></i>Iniciar</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <h4>No hay servicios</h4>
+      <p>Usa el botón «Nuevo servicio» para crear el primero.</p>
+      <a href="{{ url_for('services.new') }}" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Crear primer servicio</a>
+    </div>
+  {% endif %}
+{% endblock %}

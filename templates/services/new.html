@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}
+  Nuevo servicio - Gestor de servicios
+{% endblock %}
+{% block heading %}
+  Nuevo servicio
+{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Crear servicio</h5>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+              {{ form.name.label(class='form-label') }}
+              {{ form.name(class='form-control') }}
+              {% for error in form.name.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.description.label(class='form-label') }}
+              {{ form.description(class='form-control', rows='3') }}
+              {% for error in form.description.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.command.label(class='form-label') }}
+              {{ form.command(class='form-control') }}
+              <div class="form-text">Ejemplo: npm start, python app.py, dotnet run</div>
+              {% for error in form.command.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.working_directory.label(class='form-label') }}
+              {{ form.working_directory(class='form-control') }}
+              <div class="form-text">Ruta completa del directorio del servicio.</div>
+              {% for error in form.working_directory.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="mb-3">
+              {{ form.port.label(class='form-label') }}
+              {{ form.port(class='form-control') }}
+              <div class="form-text">Puerto opcional para comprobar el estado del servicio.</div>
+              {% for error in form.port.errors %}
+                <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
+            <div class="d-grid">{{ form.submit(class='btn btn-primary') }}</div>
+            <a href="{{ url_for('services.index') }}" class="btn btn-outline-secondary mt-2">Cancelar</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}{{ service.name }} - Gestor de servicios{% endblock %}
+{% block heading %}{{ service.name }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Detalles del servicio</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <strong>Estado:</strong>
+                    </div>
+                    <div class="col-md-9">
+                        <span class="status-badge status-{{ service.status }}">
+                            {% if service.status == 'running' %}EN EJECUCIÓN{% elif service.status == 'stopped' %}DETENIDO{% elif service.status == 'paused' %}EN PAUSA{% else %}ERROR{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-3">
+                        <strong>Nombre:</strong>
+                    </div>
+                    <div class="col-md-9">
+                        {{ service.name }}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-3">
+                        <strong>Descripción:</strong>
+                    </div>
+                    <div class="col-md-9">
+                        {{ service.description or 'Sin descripción.' }}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-3">
+                        <strong>Comando:</strong>
+                    </div>
+                    <div class="col-md-9">
+                        <code>{{ service.command }}</code>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-3">
+                        <strong>Directorio de trabajo:</strong>
+                    </div>
+                    <div class="col-md-9">
+                        <code>{{ service.working_directory }}</code>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-3">
+                        <strong>PID:</strong>
+                    </div>
+                    <div class="col-md-9">
+                        {{ service.pid if service.pid else 'No está ejecutándose' }}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-3">
+                        <strong>Puerto:</strong>
+                    </div>
+                    <div class="col-md-9">
+                        {{ service.port if service.port else 'No configurado' }}
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="btn-group" role="group">
+                            {% if service.status == 'running' %}
+                                     <form method="POST" action="{{ url_for('services.stop', id=service.id) }}" class="d-inline">
+                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                         <button type="submit" class="btn btn-danger" onclick="return confirm('¿Detener este servicio?');">
+                                <i class="fas fa-stop me-1"></i>Detener
+                                         </button>
+                                     </form>
+                                     <form method="POST" action="{{ url_for('services.restart', id=service.id) }}" class="d-inline">
+                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                         <button type="submit" class="btn btn-warning" onclick="return confirm('¿Reiniciar este servicio?');">
+                                <i class="fas fa-redo me-1"></i>Reiniciar
+                                         </button>
+                                     </form>
+                            {% else %}
+                                     <form method="POST" action="{{ url_for('services.start', id=service.id) }}" class="d-inline">
+                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                         <button type="submit" class="btn btn-success">
+                                <i class="fas fa-play me-1"></i>Iniciar
+                                         </button>
+                                     </form>
+                            {% endif %}
+                            <a href="{{ url_for('services.edit', id=service.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-edit me-1"></i>Editar
+                            </a>
+                                     <form method="POST" action="{{ url_for('services.delete', id=service.id) }}" class="d-inline">
+                                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                           <button type="submit" class="btn btn-danger" onclick="return confirm('¿Eliminar este servicio? Esta acción no se puede deshacer.');">
+                                <i class="fas fa-trash me-1"></i>Eliminar
+                                         </button>
+                                     </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Registros del servicio</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">La función de registros estará disponible próximamente.</p>
+                <div class="placeholder">
+                    <div class="placeholder-glow">
+                        <p class="placeholder"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}
+  Administración - Gestor de servicios
+{% endblock %}
+{% block heading %}
+  Administración
+{% endblock %}
+{% block toolbar %}
+  <a href="{{ url_for('admin.new') }}" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Nuevo usuario</a>
+{% endblock %}
+{% block content %}
+  {% if users %}
+    <div class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Creado el</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+            <tr>
+              <td>{{ user.username }}</td>
+              <td>
+                {% if user.is_admin %}
+                  <span class="badge bg-danger">Administrador</span>
+                {% else %}
+                  <span class="badge bg-secondary">Usuario</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if user.is_active %}
+                  <span class="badge bg-success">Activa</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactiva</span>
+                {% endif %}
+              </td>
+              <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+              <td>
+                {% if user.id != current_user.id %}
+                  <a href="{{ url_for('admin.edit', id=user.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit me-1"></i>Editar</a>
+                  <form method="POST" action="{{ url_for('admin.delete', id=user.id) }}" class="d-inline" onsubmit="return confirm('¿Eliminar al usuario {{ user.username }}? Esta acción no se puede deshacer.');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash me-1"></i>Eliminar</button>
+                  </form>
+                {% else %}
+                  <span class="text-muted">(Tú)</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      <h4>No hay usuarios</h4>
+      <p>Usa el botón «Nuevo usuario» para crear el primero.</p>
+    </div>
+  {% endif %}
+  <div class="row mt-4">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Rutas globales de ejecución</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Estas rutas se aplican a todos los servicios al iniciarlos.</p>
+          <form method="POST" action="{{ url_for('admin.settings') }}">
+            {{ settings_form.hidden_tag() }}
+            <div class="mb-3">{{ settings_form.npm_bin_path.label(class='form-label') }}
+              {{ settings_form.npm_bin_path(class='form-control', placeholder='Ejemplo: C:\\Program Files\\nodejs\\npm.cmd') }}</div>
+            <div class="mb-3">{{ settings_form.node_path.label(class='form-label') }}
+              {{ settings_form.node_path(class='form-control', placeholder='Ejemplo: C:\\Program Files\\nodejs\\node.exe') }}</div>
+            <div class="mb-3">{{ settings_form.python_env_path.label(class='form-label') }}
+              {{ settings_form.python_env_path(class='form-control', placeholder='Ejemplo: C:\\proyectos\\entorno') }}</div>
+            {{ settings_form.submit(class='btn btn-primary') }}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

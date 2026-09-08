@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}
+  Perfil - Gestor de servicios
+{% endblock %}
+{% block heading %}
+  Perfil
+{% endblock %}
+{% block content %}
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Perfil de usuario</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <strong>Usuario:</strong>
+            </div>
+            <div class="col-md-9">{{ user.username }}</div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-3">
+              <strong>Rol:</strong>
+            </div>
+            <div class="col-md-9">
+              {% if user.is_admin %}
+                <span class="badge bg-danger">Administrador</span>
+              {% else %}
+                <span class="badge bg-secondary">Usuario</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-3">
+              <strong>Estado de la cuenta:</strong>
+            </div>
+            <div class="col-md-9">
+              {% if user.is_active %}
+                <span class="badge bg-success">Activa</span>
+              {% else %}
+                <span class="badge bg-secondary">Inactiva</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-md-3">
+              <strong>Miembro desde:</strong>
+            </div>
+            <div class="col-md-9">{{ user.created_at.strftime('%d/%m/%Y') }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

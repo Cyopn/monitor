@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Monitorización - Gestor de servicios{% endblock %}
+{% block heading %}Monitorización de servicios{% endblock %}
+{% block content %}
+<div class="row mb-4" id="system-resources">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">CPU del equipo</h5>
+                <div class="progress" role="progressbar" aria-label="Uso de CPU">
+                    <div id="system-cpu-bar" class="progress-bar" style="width: 0%">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Memoria del equipo</h5>
+                <div class="progress" role="progressbar" aria-label="Uso de memoria">
+                    <div id="system-memory-bar" class="progress-bar bg-info" style="width: 0%">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Disco principal</h5>
+                <div class="progress" role="progressbar" aria-label="Uso de disco">
+                    <div id="system-disk-bar" class="progress-bar bg-warning" style="width: 0%">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    {% for service in services %}
+    <div class="col-md-4">
+        <div class="card service-card">
+            <div class="service-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ service.name }}</h5>
+                <span class="status-badge status-{{ service.status }}" id="service-status-{{ service.id }}">
+                    {{ service.status|upper }}
+                </span>
+            </div>
+            <div class="service-body">
+                <p><strong>Comando:</strong> <code>{{ service.command }}</code></p>
+                <p><strong>Directorio de trabajo:</strong> <code>{{ service.working_directory }}</code></p>
+                <p><strong>PID:</strong> <span id="service-pid-{{ service.id }}">{{ service.pid if service.pid else 'No está ejecutándose' }}</span></p>
+                <p><strong>Estado:</strong>
+                    {% if service.status == 'running' %}
+                    <span class="text-success">● En ejecución</span>
+                    {% elif service.status == 'error' %}
+                    <span class="text-danger">● Error</span>
+                    {% elif service.status == 'paused' %}
+                    <span class="text-warning">● En pausa</span>
+                    {% else %}
+                    <span class="text-secondary">● Detenido</span>
+                    {% endif %}
+                </p>
+                <p><strong>Última actualización:</strong>
+                    <span id="service-updated-{{ service.id }}">{{ service.updated_at.strftime('%Y-%m-%d %H:%M:%S') if service.updated_at else 'Nunca' }}</span>
+                </p>
+                <div class="small text-muted mb-3">
+                    <div>CPU del servicio: <span id="service-cpu-{{ service.id }}">--</span></div>
+                    <div>Memoria del servicio: <span id="service-memory-{{ service.id }}">--</span></div>
+                </div>
+                <div class="d-grid gap-2">
+                    {% if service.status == 'running' %}
+                          <button type="button" class="btn btn-outline-danger btn-sm"
+                            onclick="if(confirm('¿Detener este servicio?')){fetch('{{ url_for('monitoring.api_stop_service', id=service.id) }}', {method: 'POST', headers: {'X-CSRFToken': csrfToken}}).then(r=>r.ok?location.reload():alert('No se pudo detener'));}">
+                        <i class="fas fa-stop me-1"></i> Detener
+                          </button>
+                    {% else %}
+                          <button type="button" class="btn btn-outline-success btn-sm"
+                            onclick="if(confirm('¿Iniciar este servicio?')){fetch('{{ url_for('monitoring.api_start_service', id=service.id) }}', {method: 'POST', headers: {'X-CSRFToken': csrfToken}}).then(r=>r.ok?location.reload():alert('No se pudo iniciar'));}">
+                        <i class="fas fa-play me-1"></i> Iniciar
+                          </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% if not services %}
+<div class="alert alert-info">
+    <h4>No hay servicios</h4>
+    <p>Ve a la sección «Servicios» para añadirlos.</p>
+    <a href="{{ url_for('services.index') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Ir a servicios
+    </a>
+</div>
+{% endif %}
+{% endblock %}

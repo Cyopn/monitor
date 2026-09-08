@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>
+      {% block title %}
+        Gestor de servicios
+      {% endblock %}
+    </title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <style>
+      body {
+        padding-top: 56px; /* Offset for fixed navbar */
+      }
+      .main-content {
+        padding: 20px;
+      }
+      .service-card {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        overflow: hidden;
+      }
+      .service-header {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-bottom: 1px solid #dee2e6;
+      }
+      .service-body {
+        padding: 15px;
+      }
+      .status-badge {
+        font-size: 0.9em;
+        padding: 4px 8px;
+        border-radius: 12px;
+      }
+      .status-running {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .status-stopped {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .status-error {
+        background-color: #fff3cd;
+        color: #856404;
+      }
+      .status-paused {
+        background-color: #cce5ff;
+        color: #004085;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Gestor de servicios</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            {% if current_user.is_authenticated %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('services.index') }}">Servicios</a>
+              </li>
+              {% if current_user.is_admin %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ url_for('admin.index') }}">Administración</a>
+                </li>
+              {% endif %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('monitoring.index') }}">Monitorización</a>
+              </li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav ms-auto">
+            {% if current_user.is_authenticated %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-user"></i> {{ current_user.username }}</a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('auth.profile') }}">Perfil</a>
+                  </li>
+                  <li>
+                    <hr class="dropdown-divider" />
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('auth.logout') }}">Cerrar sesión</a>
+                  </li>
+                </ul>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('auth.login') }}">Iniciar sesión</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('auth.register') }}">Registrarse</a>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container-fluid main-content">
+      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+          {% block heading %}
+            Gestor de servicios
+          {% endblock %}
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+          {% block toolbar %}
+
+          {% endblock %}
+        </div>
+      </div>
+
+      {% with messages=get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}
+
+      {% endblock %}
+    </main>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-refresh monitoring data every 10 seconds if on monitoring page
+        {% if request.endpoint and 'monitoring' in request.endpoint %}
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        setInterval(function() {
+            fetch('{{ url_for("monitoring.api_status") }}')
+                .then(response => response.json())
+                .then(data => {
+                    // Update service status indicators
+                    data.services.forEach(service => {
+                        const statusElement = document.getElementById('service-status-' + service.id);
+                        if (statusElement) {
+                            const statusLabels = {running: 'EN EJECUCIÓN', stopped: 'DETENIDO', paused: 'EN PAUSA', error: 'ERROR'};
+                            statusElement.textContent = statusLabels[service.status] || service.status.toUpperCase();
+                            statusElement.className = 'status-badge status-' + service.status;
+                        }
+                        const pidElement = document.getElementById('service-pid-' + service.id);
+                        if (pidElement) {
+                            pidElement.textContent = service.pid || 'No está ejecutándose';
+                        }
+                        const updatedElement = document.getElementById('service-updated-' + service.id);
+                        if (updatedElement && service.updated_at) {
+                            updatedElement.textContent = new Date(service.updated_at).toLocaleString();
+                        }
+                        const cpuElement = document.getElementById('service-cpu-' + service.id);
+                        if (cpuElement) {
+                          cpuElement.textContent = service.cpu_percent === null ? '--' : service.cpu_percent.toFixed(1) + '%';
+                        }
+                        const memoryElement = document.getElementById('service-memory-' + service.id);
+                        if (memoryElement) {
+                          memoryElement.textContent = service.memory_percent === null ? '--' : service.memory_percent.toFixed(1) + '%';
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching service status:', error));
+                  fetch('{{ url_for("monitoring.api_resources") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                      const resources = data.system;
+                      [['system-cpu-bar', resources.cpu_percent],
+                       ['system-memory-bar', resources.memory_percent],
+                       ['system-disk-bar', resources.disk_percent]].forEach(([id, value]) => {
+                        const bar = document.getElementById(id);
+                        if (bar && value !== undefined) {
+                          bar.style.width = value + '%';
+                          bar.textContent = value.toFixed(1) + '%';
+                        }
+                      });
+                    })
+                    .catch(error => console.error('Error obteniendo recursos:', error));
+        }, 10000);
+        {% endif %}
+    </script>
+  </body>
+</html>
