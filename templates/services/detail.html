@@ -69,7 +69,7 @@
                 </div>
                 <div class="row mt-4">
                     <div class="col-12">
-                        <div class="btn-group" role="group">
+                        <div class="btn-group gap-2" role="group">
                             {% if service.status == 'running' %}
                                      <form method="POST" action="{{ url_for('services.stop', id=service.id) }}" class="d-inline">
                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -91,7 +91,7 @@
                                          </button>
                                      </form>
                             {% endif %}
-                            <a href="{{ url_for('services.edit', id=service.id) }}" class="btn btn-secondary">
+                            <a href="{{ url_for('services.edit', id=service.id) }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-edit me-1"></i>Editar
                             </a>
                                      <form method="POST" action="{{ url_for('services.delete', id=service.id) }}" class="d-inline">
@@ -112,14 +112,38 @@
                 <h5 class="mb-0">Registros del servicio</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted">La función de registros estará disponible próximamente.</p>
-                <div class="placeholder">
-                    <div class="placeholder-glow">
-                        <p class="placeholder"></p>
-                    </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted" id="service-log-status">Salida estándar y errores</small>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-service-logs">
+                        <i class="fas fa-sync-alt me-1"></i>Actualizar
+                    </button>
                 </div>
+                <pre id="service-logs" class="bg-dark text-light p-3 mb-0" style="height: 280px; overflow: auto; white-space: pre-wrap;">{{ logs or 'Todavía no hay registros.' }}</pre>
             </div>
         </div>
     </div>
 </div>
+<script>
+    const serviceLogs = document.getElementById('service-logs');
+    const serviceLogStatus = document.getElementById('service-log-status');
+
+    async function refreshServiceLogs() {
+        try {
+            const response = await fetch('{{ url_for("services.logs", id=service.id) }}');
+            if (!response.ok) throw new Error('No se pudieron consultar los registros');
+            const data = await response.json();
+            const wasAtBottom = serviceLogs.scrollHeight - serviceLogs.scrollTop <= serviceLogs.clientHeight + 20;
+            serviceLogs.textContent = data.logs || 'Todavía no hay registros.';
+            if (wasAtBottom) serviceLogs.scrollTop = serviceLogs.scrollHeight;
+            serviceLogStatus.textContent = 'Actualizado ' + new Date().toLocaleTimeString();
+        } catch (error) {
+            serviceLogStatus.textContent = 'No se pudieron actualizar los registros';
+        }
+    }
+
+    document.getElementById('refresh-service-logs').addEventListener('click', refreshServiceLogs);
+    {% if service.status == 'running' %}
+    setInterval(refreshServiceLogs, 3000);
+    {% endif %}
+</script>
 {% endblock %}

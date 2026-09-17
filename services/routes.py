@@ -1,4 +1,4 @@
-from flask import render_template, url_for, flash, redirect, request, abort
+from flask import render_template, url_for, flash, redirect, request, abort, jsonify, current_app
 from flask_login import login_required, current_user
 from app import db
 from . import bp
@@ -7,7 +7,8 @@ from models import AppSettings, Service, User
 import os
 import sys
 from datetime import datetime
-from .utils import is_process_running, start_process, terminate_process
+from .utils import (is_process_running, read_service_logs, service_log_path,
+                    start_process, terminate_process)
 
 # We'll create a simple service manager class for starting/stopping services
 
@@ -42,7 +43,11 @@ class ServiceManager:
                 env['PATH'] = python_bin_dir + os.pathsep + env.get('PATH', '')
 
             success, pid, message = start_process(
-                service.command, service.working_directory, env
+                service.command,
+                service.working_directory,
+                env,
+                service_log_path(
+                    current_app.config['SERVICE_LOG_DIR'], service.id)
             )
             if not success:
                 raise RuntimeError(message)
@@ -146,7 +151,21 @@ def detail(id):
     service = Service.query.get_or_404(id)
     if service.user_id != current_user.id and not current_user.is_admin:
         abort(403)
-    return render_template('services/detail.html', service=service)
+    log_path = service_log_path(
+        current_app.config['SERVICE_LOG_DIR'], service.id)
+    logs = read_service_logs(log_path)
+    return render_template('services/detail.html', service=service, logs=logs)
+
+
+@bp.route('/<int:id>/logs')
+@login_required
+def logs(id):
+    service = Service.query.get_or_404(id)
+    if service.user_id != current_user.id and not current_user.is_admin:
+        abort(403)
+    log_path = service_log_path(
+        current_app.config['SERVICE_LOG_DIR'], service.id)
+    return jsonify({'logs': read_service_logs(log_path)})
 
 
 @bp.route('/<int:id>/edit', methods=['GET', 'POST'])

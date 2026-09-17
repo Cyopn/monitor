@@ -7,8 +7,13 @@ import subprocess
 import signal
 import time
 import shutil
+import re
+import threading
 import psutil
 from typing import Optional, Tuple
+
+
+ANSI_ESCAPE_RE = re.compile(rb'\x1B(?:\[[0-?]*[ -/]*[@-~])')
 
 
 def is_process_running(pid: int) -> bool:
@@ -122,30 +127,73 @@ def get_system_resources() -> dict:
     }
 
 
-def start_process(command: str, cwd: str, env: dict = None) -> Tuple[bool, Optional[int], str]:
+def service_log_path(log_dir: str, service_id: int) -> str:
+    """Return the platform-independent log path for a service."""
+    os.makedirs(log_dir, exist_ok=True)
+    return os.path.join(log_dir, f'service-{service_id}.log')
+
+
+def read_service_logs(log_path: str, max_bytes: int = 20000) -> str:
+    """Read the most recent part of a service log without unbounded I/O."""
+    try:
+        with open(log_path, 'rb') as log_file:
+            log_file.seek(0, os.SEEK_END)
+            start = max(0, log_file.tell() - max_bytes)
+            log_file.seek(start)
+            content = log_file.read()
+        text = ANSI_ESCAPE_RE.sub(b'', content).decode(
+            'utf-8', errors='replace')
+        if start:
+            text = text.split('\n', 1)[-1]
+        return text
+    except FileNotFoundError:
+        return ''
+    except OSError:
+        return 'No se pudieron leer los registros del servicio.'
+
+
+def _capture_process_output(process: subprocess.Popen, log_path: str) -> None:
+    """Write process output without terminal formatting codes."""
+    try:
+        with open(log_path, 'wb') as log_file:
+            for output in iter(process.stdout.readline, b''):
+                log_file.write(ANSI_ESCAPE_RE.sub(b'', output))
+                log_file.flush()
+    finally:
+        if process.stdout:
+            process.stdout.close()
+
+
+def start_process(command: str, cwd: str, env: dict = None,
+                  log_path: str = None) -> Tuple[bool, Optional[int], str]:
     """Start a process and return success, PID, and message"""
     try:
         if env is None:
             env = os.environ.copy()
 
+        capture_output = log_path is not None
+        if log_path:
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+        popen_args = {
+            'cwd': cwd,
+            'env': env,
+            'shell': True,
+            'stdout': subprocess.PIPE if capture_output else None,
+            'stderr': subprocess.STDOUT,
+        }
         if sys.platform == 'win32':
-            # Windows: use CREATE_NEW_PROCESS_GROUP for proper process group handling
-            proc = subprocess.Popen(
-                command,
-                cwd=cwd,
-                env=env,
-                shell=True,
-                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
-            )
+            popen_args['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
         else:
-            # Unix/Linux: use preexec_fn to create new process group
-            proc = subprocess.Popen(
-                command,
-                cwd=cwd,
-                env=env,
-                shell=True,
-                preexec_fn=os.setsid
-            )
+            popen_args['preexec_fn'] = os.setsid
+        proc = subprocess.Popen(command, **popen_args)
+
+        if capture_output:
+            threading.Thread(
+                target=_capture_process_output,
+                args=(proc, log_path),
+                daemon=True,
+            ).start()
 
         return True, proc.pid, f"Process started with PID {proc.pid}"
     except Exception as e:
